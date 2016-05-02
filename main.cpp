@@ -53,16 +53,17 @@ knowledge of the CeCILL license and that you accept its terms.
 
 #include "MersenneTwister.h"
 #include "main.h"
+#include "utils.h"
 
 using namespace std;
 
 //************ EXTERN **************
-int brClass, mutClass, foldBrClass, allBrClasses;
+int brClass, mutClass, foldBrClass, allBrClasses, sampledPopsSize;
 //**********************************
 
 MTRand rMT;
 map<vector<int>, int> intVec2BrConfig;
-vector<int> npopVec;
+vector<int> sampledPops, allPops;
 map<vector<int>, int> finalTableMap;
 
 int ms_argc;
@@ -90,8 +91,10 @@ string getMutConfigStr(vector<int> configVec) {
 }
 
 
+int getPopSampleStatus(int pop) { return allPops[pop]; }
+
 int getBrConfigNum(int *brConfVec) {
-	vector<int> vec(brConfVec, brConfVec+npopVec.size());
+	vector<int> vec(brConfVec, brConfVec+sampledPops.size());
 	return intVec2BrConfig[vec];
 }
 
@@ -100,29 +103,31 @@ int getBrConfigNum(int *brConfVec) {
 void evalBranchConfigs() {
 	int quo, rem, maxPopSize, totPopSum, count = 0, sumConfig;
 	bool skipConfig;
-	maxPopSize = totPopSum = npopVec[0];
+	maxPopSize = totPopSum = sampledPops[0];
 
-	for (size_t i = 1; i < npopVec.size(); i++) {
-		totPopSum += npopVec[i];
-		if (npopVec[i] > maxPopSize)
-			maxPopSize = npopVec[i];
+	for (size_t i = 1; i < sampledPops.size(); i++) {
+		totPopSum += sampledPops[i];
+		if (sampledPops[i] > maxPopSize)
+			maxPopSize = sampledPops[i];
 	}
 	++maxPopSize;
 
-	for (unsigned long int i = 1; i <= (unsigned long int) pow(maxPopSize,npopVec.size()); i++) {
+	for (unsigned long int i = 1; i <= (unsigned long int) pow(maxPopSize,sampledPops.size()); i++) {
 		quo = i;
 		rem = 0;
-//		stringstream stst;
-//		stst << ")";
+/*
+		stringstream stst;
+		stst << ")";
+*/
 		sumConfig = 0;
 		skipConfig = false;
 		vector<int> vec;
 
-		for (size_t j = 0; j < npopVec.size(); j++) {
+		for (size_t j = 0; j < sampledPops.size(); j++) {
 			if (quo) {
 				rem = quo % (maxPopSize);
 				quo /= (maxPopSize);
-				if (rem > npopVec[npopVec.size()-1-j]) {
+				if (rem > sampledPops[sampledPops.size()-1-j]) {
 					skipConfig = true;
 					break;
 				}
@@ -135,37 +140,58 @@ void evalBranchConfigs() {
 				vec.push_back(0);
 			}
 
-//			if (j < npopVec.size() - 1)
-//				stst << ",";
+/*
+			if (j < sampledPops.size() - 1)
+				stst << ",";
+*/
 		}
 
 		if (sumConfig == totPopSum)
 			break;
 
 		if (!skipConfig) {
-//			stst << "(";
-//			string config = stst.str();
-//			reverse(config.begin(),config.end());
+/*
+			stst << "(";
+			string config = stst.str();
+			reverse(config.begin(),config.end());
+*/
 			reverse(vec.begin(),vec.end());
 			intVec2BrConfig[vec] = count;
 			++count;
-//			printf("%d\t%d\t%s\n", i, count, config.c_str());
-//			printf("%d\t%s\n", count, config.c_str());
+/*
+			printf("%d\t%d\t%s\n", i, count, config.c_str());
+			printf("%d\t%s\n", count, config.c_str());
+*/
 		}
 	}
 }
 
 
-void readPopSizes(int npops) {
-	string line;
+void readPopSizes() {
+	string line, del;
+	vector<string> tokens;
 	ifstream ifs("popconfig.txt",ios::in);
-	getline(ifs,line);
-	stringstream stst;
-	stst << line;
-	for (int i = 0; i < npops; i++) {
-		int tmp;
-		stst >> tmp;
-		npopVec.push_back(tmp);
+	while (getline(ifs,line)) {
+		del = " ";
+		tokens.clear();
+		Tokenize(line, tokens, del);
+		for(unsigned int j=0;j<tokens.size();j++)
+			TrimSpaces(tokens[j]);
+
+		if ((tokens[0][0] != '#') && (line.size() > 0)) {
+			for (size_t i = 0; i < tokens.size(); i++) {
+				stringstream stst(tokens[i]);
+				if (stst.str() != "u") {
+					int tmp;
+					stst >> tmp;
+					sampledPops.push_back(tmp);
+					allPops.push_back(1);
+				}
+				else
+					allPops.push_back(0);
+			}
+			sampledPopsSize = sampledPops.size();
+		}
 	}
 	ifs.close();
 }
@@ -174,15 +200,15 @@ void readPopSizes(int npops) {
 int main(int argc, char* argv[]) {
 
 //	int nsam = atoi(argv[1]);
-	int kmax = atoi(argv[argc-3]), npopSize = atoi(argv[argc-2]);
+	int kmax = atoi(argv[argc-2]);
 	char brFold = argv[argc-1][0];
 	ntrees = atoi(argv[2]);
 
-	readPopSizes(npopSize);
+	readPopSizes();
 
-	brClass = npopVec[0]+1;
-	for (size_t i = 1; i < npopVec.size(); i++)
-		brClass *= (npopVec[i]+1);
+	brClass = sampledPops[0]+1;
+	for (size_t i = 1; i < sampledPops.size(); i++)
+		brClass *= (sampledPops[i]+1);
 	brClass -= 2;
 	allBrClasses = brClass;
 	foldBrClass = 0;
@@ -207,12 +233,17 @@ int main(int argc, char* argv[]) {
 	evalBranchConfigs();
 
 	// calling ms
-	ms_argc = argc - 3;
+	ms_argc = argc - 2;
 	ms_argv = argv;
 	main_ms(ms_argc, ms_argv);
 
-	for (map<vector<int>, int>::iterator it = finalTableMap.begin(); it != finalTableMap.end(); it++)
-		printf("%s : %.5e\n", getMutConfigStr(it->first).c_str(), (double) it->second/ntrees);
+//	double loglik = 0.0;
+	for (map<vector<int>, int>::iterator it = finalTableMap.begin(); it != finalTableMap.end(); it++) {
+		printf("%s : %d\n", getMutConfigStr(it->first).c_str(), it->second);
+//		printf("%s : %.5e\n", getMutConfigStr(it->first).c_str(), (double) it->second/ntrees);
+//		loglik += (log(it->second)-log(ntrees)) * it->second/ntrees;
+	}
+//	printf("LnL = %.6f\n", loglik);
 
 	return 0;
 }

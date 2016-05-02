@@ -178,6 +178,7 @@ int main_ms(int ms_argc, char *ms_argv[])
  	void freed2matrix(double **m, int x);
 	void setMutConfigCount(int singleConfig[]);
 	int getBrConfigNum(int brConfVec[]);
+	int getPopSampleStatus(int pop);
 
 
 	ntbs = 0 ;   /* these next few lines are for reading in parameters from a file (for each sample) */
@@ -251,17 +252,19 @@ int main_ms(int ms_argc, char *ms_argv[])
         if( segsites > 0 ) {
         	int j;
         	for(j=0;j<segsites; j++) {
-                int segCountVec[pars.cp.npop];
-                memset(segCountVec,0,pars.cp.npop*sizeof(int));
+                int segCountVec[sampledPopsSize];
+                memset(segCountVec,0,sampledPopsSize*sizeof(int));
                 int sum = 0;
 
                 for(i = 0; i < pars.cp.npop; i++) {
-            		int mutCounter = 0;
-            		for(k = 0; k < pars.cp.config[i]; k++) {
-            			mutCounter += (list[sum][j] - '0');
-            			++sum;
-            		}
-            		segCountVec[i] += mutCounter;
+                	if (getPopSampleStatus(i)) {
+                		int mutCounter = 0;
+                		for(k = 0; k < pars.cp.config[i]; k++) {
+                			mutCounter += (list[sum][j] - '0');
+                			++sum;
+                		}
+                		segCountVec[i] += mutCounter;
+                	}
             	}
                 ++mutConfigVec[getBrConfigNum(segCountVec)];
         	}

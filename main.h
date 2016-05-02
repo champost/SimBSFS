@@ -46,6 +46,7 @@ int main_ms(int ms_argc, char *ms_argv[]);
 
 double ranMT();
 void setMutConfigCount(int *singleConfig);
+int getPopSampleStatus(int pop);
 int getBrConfigNum(int *brConfVec);
 }
 

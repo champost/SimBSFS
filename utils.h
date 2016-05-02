@@ -1,5 +1,5 @@
 /***************************************************************************
-© Champak Beeravolu Reddy 2015-now
+© Champak Beeravolu Reddy 2016-now
 
 champak.br@gmail.com
 
@@ -31,71 +31,50 @@ knowledge of the CeCILL license and that you accept its terms.
 
 ***************************************************************************/
 
+/*
+ * utils.h
+ *
+ *  Created on: 4 Jan 2016
+ *      Author: champost
+ */
 
-/***************************************************************************
+#ifndef UTILS_H_
+#define UTILS_H_
 
-This file was downloaded from https://webshare.uchicago.edu/users/rhudson1/Public/ms.folder/ms.tar.gz on Jan 14 2015
-and thereafter modified by Champak Beeravolu Reddy (champak.br@gmail.com)
+#include <climits> // NOT the C++ version of limits... but defines UCHAR_MAX...
 
-***************************************************************************/
+using namespace std;
 
+typedef unsigned long uint32;
 
-struct devent {
-	double time;
-	int popi;
-	int popj;
-	double paramv;
-	double **mat ;
-	char detype ;
-	struct devent *nextde;
-	} ;
-struct c_params {
-	int npop;
-	int nsam;
-	int *config;
-	double **mig_mat;
-	double r;
-	int nsites;
-	double f;
-	double track_len;
-	double *size;
-	double *alphag;
-	struct devent *deventlist ;
-	} ;
-struct m_params {
-	 double theta;
-	int segsitesin;
-	int treeflag;
-	int timeflag;
-	int mfreq;
-	 } ;
-struct params { 
-	struct c_params cp;
-	struct m_params mp;
-	int commandlineseedflag ;
-	int output_precision;
-	};
+vector<double> linspaced(double a, double b, int n);
+vector<double> logspaced(double a, double b, int n);
+void Tokenize(const string& str, vector<string>& tokens, const string& delimiters);
+void TrimSpaces(string& str);
 
-struct node{
-	int abv;
-	int ndes;
-	float time;
-};
+inline uint32 hash( time_t t, clock_t c )
+{
+	// Get a uint32 from t and c
+	// Better than uint32(x) in case x is floating point in [0,1]
+	// Based on code by Lawrence Kirby (fred@genesis.demon.co.uk)
 
+	static uint32 differ = 0;  // guarantee time-based seeds will change
 
-/*KRT -- prototypes added*/
-void ordran(int n, double pbuf[]);
-void ranvec(int n, double pbuf[]);
-void order(int n, double pbuf[]);
+	uint32 h1 = 0;
+	unsigned char *p = (unsigned char *) &t;
+	for( size_t i = 0; i < sizeof(t); ++i )
+	{
+		h1 *= UCHAR_MAX + 2U;
+		h1 += p[i];
+	}
+	uint32 h2 = 0;
+	p = (unsigned char *) &c;
+	for( size_t j = 0; j < sizeof(c); ++j )
+	{
+		h2 *= UCHAR_MAX + 2U;
+		h2 += p[j];
+	}
+	return ( h1 + differ++ ) ^ h2;
+}
 
-void biggerlist(int nsam,  char **list );
-int poisso(double u);
-void locate(int n,double beg, double len,double *ptr);
-void mnmial(int n, int nclass, double p[], int rv[]);
-void usage();
-int tdesn(struct node *ptree, int tip, int node );
-int pick2(int n, int *i, int *j);
-int xover(int nsam,int ic, int is);
-int links(int c);
-
-extern int brClass, mutClass, foldBrClass, allBrClasses, sampledPopsSize;
+#endif /* UTILS_H_ */
