@@ -44,10 +44,10 @@ knowledge of the CeCILL license and that you accept its terms.
 extern "C" {
 int main_ms(int ms_argc, char *ms_argv[]);
 
-double ranMT();
 void setMutConfigCount(int *singleConfig);
 int getPopSampleStatus(int pop);
 int getBrConfigNum(int *brConfVec);
+double ran1();
 }
 
 #endif /* MAIN_H_ */

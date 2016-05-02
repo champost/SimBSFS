@@ -71,7 +71,7 @@ char **ms_argv;
 int ntrees;
 
 
-double ranMT() { return(rMT()); }
+double ran1() { return(rMT()); }
 
 void setMutConfigCount(int *singleConfig) {
         vector<int> singleConfigVec(singleConfig, singleConfig+brClass);
